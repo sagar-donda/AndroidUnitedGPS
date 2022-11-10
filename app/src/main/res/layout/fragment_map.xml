@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".fragment.MapFragment">
+
+    <androidx.fragment.app.FragmentContainerView
+        xmlns:tomtom="http://schemas.android.com/apk/res-auto"
+        android:id="@+id/navigation_fragment"
+        android:name="com.tomtom.sdk.navigation.ui.NavigationFragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tomtom:units="Metric"
+        tomtom:soundEnabled="true"
+        tomtom:keepInBackground="true"
+        tomtom:voiceLanguage="pl-PL" />
+
+</FrameLayout>

@@ -1,0 +1,23 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        google()
+        mavenCentral()
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+        maven {
+            credentials {
+                username = "sagar@unitegps.com"
+                password = "cmVmdGtuOjAxOjE2OTgyNTc1NzE6UVBTdTkxdThwUDdhdUZONE04RHVKeTUyUThu"
+            }
+            url = uri("https://repositories.tomtom.com/artifactory/maven")
+        }
+    }
+}
+rootProject.name = "SchoolBus"
+include ':app'
