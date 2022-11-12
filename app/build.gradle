@@ -28,10 +28,8 @@ android {
         develop{
             dimension 'Common'
 
-            buildConfigField 'String', 'WEB_URL', "\"https://crosswalk.unitegps.com/\""
+            buildConfigField 'String', 'WEB_URL', "\"https://beta.unitegps.com/\""
             buildConfigField("String", "MAPS_API_KEY", "\"TeLm9iZSKJ3EPbUMpUN3Fp7bwuQpdRGE\"")
-            buildConfigField("String", "SEARCH_API_KEY", "\"TeLm9iZSKJ3EPbUMpUN3Fp7bwuQpdRGE\"")
-            buildConfigField("String", "ROUTING_API_KEY", "\"TeLm9iZSKJ3EPbUMpUN3Fp7bwuQpdRGE\"")
             buildConfigField("String", "NAVIGATION_API_KEY", "\"AKCp8nGuHTQXNQz7TnVg8hmmBZnNujKj9sq1Mp2Py4vhx7gDsJfEFQSvEQLbUecd5o416uj3e\"")
         }
     }
@@ -105,4 +103,6 @@ dependencies {
      * Get Location
      */
     implementation 'com.google.android.gms:play-services-location:21.0.0'
+
+    implementation 'com.google.code.gson:gson:2.10'
 }
