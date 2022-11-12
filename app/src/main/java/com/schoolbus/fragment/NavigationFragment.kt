@@ -73,6 +73,8 @@ class NavigationFragment : BaseFragment<FragmentNavigationBinding>(),OnMapReadyC
     private lateinit var tomTomMap: TomTomMap
     private var tomTomNavigation: TomTomNavigation? = null
     private lateinit var locationEngine: LocationEngine
+    lateinit var routePlan: RoutePlan
+    lateinit var dynamicRoutingApi: DynamicRoutingApi
 
     private val navigationUiOptions = NavigationUiOptions(
         voiceLanguage = Locale.getDefault(),
@@ -93,11 +95,6 @@ class NavigationFragment : BaseFragment<FragmentNavigationBinding>(),OnMapReadyC
     var currentLocation: GeoCoordinate? = null
 
     private lateinit var mFusedLocationClient: FusedLocationProviderClient
-
-    companion object{
-        lateinit var routePlan: RoutePlan
-        lateinit var dynamicRoutingApi: DynamicRoutingApi
-    }
 
     override fun getViewBinding(
         inflater: LayoutInflater,
@@ -142,7 +139,7 @@ class NavigationFragment : BaseFragment<FragmentNavigationBinding>(),OnMapReadyC
     }
 
     private fun initRouting() {
-        routingApi = OnlineRoutingApi.create(requireContext(), BuildConfig.ROUTING_API_KEY)
+        routingApi = OnlineRoutingApi.create(requireContext(), BuildConfig.MAPS_API_KEY)
         dynamicRoutingApi = OnlineDynamicRoutingApi.create(routingApi)
     }
 
@@ -281,7 +278,7 @@ class NavigationFragment : BaseFragment<FragmentNavigationBinding>(),OnMapReadyC
         )
         val navigationConfiguration = NavigationConfiguration(
             context = requireContext(),
-            apiKey = BuildConfig.ROUTING_API_KEY,
+            apiKey = BuildConfig.MAPS_API_KEY,
             locationEngine = locationEngine,
             dynamicRoutingApi = dynamicRoutingApi,
             guidanceEngine = guidanceEngine

@@ -27,3 +27,11 @@ fun View.invisible() {
 fun View.isVisible(): Boolean {
     return this.visibility == View.VISIBLE
 }
+
+fun <T> getNestedValue(map: Map<*, *>?, vararg keys: String?): T? {
+    var value: Any? = map
+    for (key in keys) {
+        value = (value as Map<*, *>?)?.get(key)
+    }
+    return value as T?
+}
