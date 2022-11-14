@@ -19,5 +19,5 @@ dependencyResolutionManagement {
         }
     }
 }
-rootProject.name = "Unite GPS"
+rootProject.name = "UniteGPS"
 include ':app'

@@ -108,16 +108,26 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
 
         locationEngine = AndroidLocationEngine(this)
 
-        if (ContextCompat.checkSelfPermission(this@MainActivity,
-                Manifest.permission.ACCESS_FINE_LOCATION) !==
-            PackageManager.PERMISSION_GRANTED) {
-            if (ActivityCompat.shouldShowRequestPermissionRationale(this@MainActivity,
-                    Manifest.permission.ACCESS_FINE_LOCATION)) {
-                ActivityCompat.requestPermissions(this@MainActivity,
-                    arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 1)
+        if (ContextCompat.checkSelfPermission(
+                this@MainActivity,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) !==
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(
+                    this@MainActivity,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                )
+            ) {
+                ActivityCompat.requestPermissions(
+                    this@MainActivity,
+                    arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 1
+                )
             } else {
-                ActivityCompat.requestPermissions(this@MainActivity,
-                    arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 1)
+                ActivityCompat.requestPermissions(
+                    this@MainActivity,
+                    arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 1
+                )
             }
         }
 
@@ -171,16 +181,22 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
     }
 
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>,
-                                            grantResults: IntArray) {
+    override fun onRequestPermissionsResult(
+        requestCode: Int, permissions: Array<String>,
+        grantResults: IntArray
+    ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         when (requestCode) {
             1 -> {
                 if (grantResults.isNotEmpty() && grantResults[0] ==
-                    PackageManager.PERMISSION_GRANTED) {
-                    if ((ContextCompat.checkSelfPermission(this@MainActivity,
-                            Manifest.permission.ACCESS_FINE_LOCATION) ===
-                                PackageManager.PERMISSION_GRANTED)) {
+                    PackageManager.PERMISSION_GRANTED
+                ) {
+                    if ((ContextCompat.checkSelfPermission(
+                            this@MainActivity,
+                            Manifest.permission.ACCESS_FINE_LOCATION
+                        ) ===
+                                PackageManager.PERMISSION_GRANTED)
+                    ) {
                         Toast.makeText(this, "Permission Granted", Toast.LENGTH_SHORT).show()
                     }
                 } else {
@@ -301,13 +317,18 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
             val type: Type = object : TypeToken<ArrayList<RouteResponseItem>>() {}.type
             coordinate = Gson().fromJson(it, type)
 
+//            Toast.makeText(this, coordinate.toString(), Toast.LENGTH_SHORT).show();
+//            Log.e("", coordinate.toString() ,)
+
+//            println("this is from line 306" + coordinate.toString())
+
+
             if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
                 Toast.makeText(this, "landscape", Toast.LENGTH_SHORT).show();
             } else if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
                 Toast.makeText(this, "portrait", Toast.LENGTH_SHORT).show();
                 requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
                 binding.clMap.visible()
-
             }
             requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
 //            Toast.makeText(this, requestedOrientation.toString(), Toast.LENGTH_SHORT).show()
