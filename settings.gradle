@@ -19,5 +19,5 @@ dependencyResolutionManagement {
         }
     }
 }
-rootProject.name = "SchoolBus"
+rootProject.name = "Unite GPS"
 include ':app'

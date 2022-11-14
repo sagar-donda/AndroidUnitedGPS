@@ -24,6 +24,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.github.florent37.runtimepermission.kotlin.askPermission
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -107,6 +108,19 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
 
         locationEngine = AndroidLocationEngine(this)
 
+        if (ContextCompat.checkSelfPermission(this@MainActivity,
+                Manifest.permission.ACCESS_FINE_LOCATION) !==
+            PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this@MainActivity,
+                    Manifest.permission.ACCESS_FINE_LOCATION)) {
+                ActivityCompat.requestPermissions(this@MainActivity,
+                    arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 1)
+            } else {
+                ActivityCompat.requestPermissions(this@MainActivity,
+                    arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 1)
+            }
+        }
+
         // Lets check for FINE LOCATION permissions ...
         if (ActivityCompat.checkSelfPermission(
                 this,
@@ -155,6 +169,28 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
 
         navigationFragment.setTomTomNavigation(tomtomNavigation)
     }
+
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>,
+                                            grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        when (requestCode) {
+            1 -> {
+                if (grantResults.isNotEmpty() && grantResults[0] ==
+                    PackageManager.PERMISSION_GRANTED) {
+                    if ((ContextCompat.checkSelfPermission(this@MainActivity,
+                            Manifest.permission.ACCESS_FINE_LOCATION) ===
+                                PackageManager.PERMISSION_GRANTED)) {
+                        Toast.makeText(this, "Permission Granted", Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    Toast.makeText(this, "Permission Denied", Toast.LENGTH_SHORT).show()
+                }
+                return
+            }
+        }
+    }
+
 
     private fun initClick() {
         binding.btnTryAgain.setOnClickListener {
@@ -271,6 +307,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
                 Toast.makeText(this, "portrait", Toast.LENGTH_SHORT).show();
                 requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
                 binding.clMap.visible()
+
             }
             requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
 //            Toast.makeText(this, requestedOrientation.toString(), Toast.LENGTH_SHORT).show()
