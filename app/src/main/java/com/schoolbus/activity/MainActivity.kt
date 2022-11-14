@@ -4,9 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
-import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
-import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.location.LocationManager
 import android.os.Build
@@ -16,6 +14,7 @@ import android.provider.Settings
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
+import android.webkit.JavascriptInterface
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -258,7 +257,6 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
         binding.webview.settings.javaScriptEnabled = true
         loadWebInterface()
 
-
         binding.webview.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
         binding.webview.settings.setRenderPriority(WebSettings.RenderPriority.HIGH)
         binding.webview.settings.cacheMode = WebSettings.LOAD_DEFAULT
@@ -317,23 +315,6 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
             val type: Type = object : TypeToken<ArrayList<RouteResponseItem>>() {}.type
             coordinate = Gson().fromJson(it, type)
 
-//            Toast.makeText(this, coordinate.toString(), Toast.LENGTH_SHORT).show();
-//            Log.e("", coordinate.toString() ,)
-
-//            println("this is from line 306" + coordinate.toString())
-
-
-            if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                Toast.makeText(this, "landscape", Toast.LENGTH_SHORT).show();
-            } else if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
-                Toast.makeText(this, "portrait", Toast.LENGTH_SHORT).show();
-                requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-                binding.clMap.visible()
-            }
-            requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-//            Toast.makeText(this, requestedOrientation.toString(), Toast.LENGTH_SHORT).show()
-//            Toast.makeText(
-//                this, MainActivity.getResources().getConfiguration().orientation, Toast.LENGTH_SHORT).show()
             runOnUiThread {
                 binding.clMap.visible()
             }
@@ -350,10 +331,19 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
                 )
 
                 planRoute(departureCoordinate, destinationCoordinate)
+
             }, 2000)
 
+        },onHideTomTom = {
+            binding.clMap.gone()
+        },onShowTomTom = {
+            println("we will be display the map now")
+            print(binding.clMap.visible())
+            binding.clMap.visible()
         }), "Android")
+//        binding.webview.addJavascriptInterface(WebAppInterface(this), "Android")
     }
+
 
     private fun initMap() {
         supportFragmentManager.beginTransaction()
@@ -363,6 +353,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
 
     private fun enableUserLocation() {
         // Getting locations to the map
+
         tomTomMap.setLocationEngine(locationEngine)
         val locationMarker = LocationMarkerOptions(LocationMarkerOptions.Type.POINTER)
         tomTomMap.enableLocationMarker(locationMarker)
@@ -379,6 +370,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
         destinationCoordinate: GeoCoordinate
     ) {
         planRouteOptions = RoutePlanningOptions(
+
             itinerary = Itinerary(
                 origin = departureCoordinate,
                 destination = destinationCoordinate
