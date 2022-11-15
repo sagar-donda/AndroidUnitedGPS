@@ -4,8 +4,11 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
+import android.content.IntentSender
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.graphics.Bitmap
+import android.location.Location
 import android.location.LocationManager
 import android.os.Handler
 import android.os.Looper
@@ -22,6 +25,9 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.github.florent37.runtimepermission.kotlin.askPermission
+import com.google.android.gms.common.api.ResolvableApiException
+import com.google.android.gms.location.*
+import com.google.android.gms.tasks.Task
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.schoolbus.BuildConfig
@@ -66,7 +72,19 @@ import java.util.*
 
 class MainActivity : BaseActivity<ActivityMainBinding>() {
 
+    private val REQUEST_CHECK_SETTINGS: Int = 101
     private var mLoaded = false
+
+    lateinit var locationCallback: LocationCallback
+    lateinit var locationRequest: LocationRequest
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
+
+    private var requestingLocationUpdates = false
+    var previousLocation: Location? = null
+    var pastDistances = ArrayList<Float>()
+    val MAX_DISTANCE_COUNTS = 5
+    val HIDE_MAP_ON_MOVE_DISTANCE_THRESHOLD = 20
+    val LOCATION_UPDATE_INTERVAL_MILLIS = 1000L
 
     /**
      * Map
@@ -107,17 +125,17 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
         if (ContextCompat.checkSelfPermission(
                 this@MainActivity,
                 Manifest.permission.ACCESS_FINE_LOCATION
-            ) !== PackageManager.PERMISSION_GRANTED
+            ) !==
+            PackageManager.PERMISSION_GRANTED
         ) {
             if (ActivityCompat.shouldShowRequestPermissionRationale(
                     this@MainActivity,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
+                    Manifest.permission.ACCESS_FINE_LOCATION
                 )
             ) {
                 ActivityCompat.requestPermissions(
                     this@MainActivity,
-                    arrayOf(Manifest.permission.CAMERA),
-                    1
+                    arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 1
                 )
             } else {
                 ActivityCompat.requestPermissions(
@@ -127,6 +145,91 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
             }
         }
 
+        initLocationFeatures()
+
+    }
+
+    private fun busStopped() {
+        binding.tvBusMovingOverlay.gone()
+    }
+
+    private fun busMoving() {
+        binding.tvBusMovingOverlay.visible()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (requestingLocationUpdates) startLocationUpdates()
+    }
+
+    private fun startLocationUpdates() {
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return
+        }
+        fusedLocationClient.requestLocationUpdates(
+            locationRequest,
+            locationCallback,
+            Looper.getMainLooper()
+        )
+    }
+
+    override fun onPause() {
+        super.onPause()
+        stopLocationUpdates()
+    }
+
+    private fun stopLocationUpdates() {
+        fusedLocationClient.removeLocationUpdates(locationCallback)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQUEST_CHECK_SETTINGS) {
+            if (resultCode == RESULT_OK) {
+                startLocationUpdates()
+            } else {
+                finish()
+            }
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int, permissions: Array<String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        when (requestCode) {
+            1 -> {
+                if (grantResults.isNotEmpty() && grantResults[0] ==
+                    PackageManager.PERMISSION_GRANTED
+                ) {
+                    if ((ContextCompat.checkSelfPermission(
+                            this@MainActivity,
+                            Manifest.permission.ACCESS_FINE_LOCATION
+                        ) ===
+                                PackageManager.PERMISSION_GRANTED)
+                    ) {
+                        Toast.makeText(this, "Permission Granted", Toast.LENGTH_SHORT).show()
+                        // init permissions related features
+                        initLocationFeatures()
+                    }
+                } else {
+                    Toast.makeText(this, "Permission Denied", Toast.LENGTH_SHORT).show()
+                    finish()
+                }
+                return
+            }
+        }
+    }
+
+    private fun initLocationFeatures() {
         // Lets check for FINE LOCATION permissions ...
         if (ActivityCompat.checkSelfPermission(
                 this,
@@ -134,19 +237,11 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
             ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
                 this,
                 Manifest.permission.ACCESS_COARSE_LOCATION
-            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.CAMERA
-            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.READ_EXTERNAL_STORAGE
-            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE
             ) != PackageManager.PERMISSION_GRANTED
         ) {
             return
         }
+
         locationEngine.enable()
 
         /**
@@ -183,54 +278,64 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
             .commitNow()
 
         navigationFragment.setTomTomNavigation(tomtomNavigation)
-    }
 
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int, permissions: Array<String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        when (requestCode) {
-            1 -> {
-                if (grantResults.isNotEmpty() && grantResults[0] ==
-                    PackageManager.PERMISSION_GRANTED
-                ) {
-                    if ((ContextCompat.checkSelfPermission(
-                            this@MainActivity,
-                            Manifest.permission.ACCESS_FINE_LOCATION
-                        ) === PackageManager.PERMISSION_GRANTED)
-                    ) {
-                        Toast.makeText(this, "Permission Granted", Toast.LENGTH_SHORT).show()
-                    } else if ((ContextCompat.checkSelfPermission(
-                            this@MainActivity,
-                            Manifest.permission.CAMERA
-                        ) === PackageManager.PERMISSION_GRANTED)
-                    ) {
-                        Toast.makeText(this, "Permission Granted", Toast.LENGTH_SHORT).show()
-                    } else if ((ContextCompat.checkSelfPermission(
-                            this@MainActivity,
-                            Manifest.permission.ACCESS_COARSE_LOCATION
-                        ) === PackageManager.PERMISSION_GRANTED)
-                    ) {
-                        Toast.makeText(this, "Permission Granted", Toast.LENGTH_SHORT).show()
-                    } else if ((ContextCompat.checkSelfPermission(
-                            this@MainActivity,
-                            Manifest.permission.READ_EXTERNAL_STORAGE
-                        ) === PackageManager.PERMISSION_GRANTED)
-                    ) {
-                        Toast.makeText(this, "Permission Granted", Toast.LENGTH_SHORT).show()
-                    } else if ((ContextCompat.checkSelfPermission(
-                            this@MainActivity,
-                            Manifest.permission.WRITE_EXTERNAL_STORAGE
-                        ) === PackageManager.PERMISSION_GRANTED)
-                    ) {
-                        Toast.makeText(this, "Permission Granted", Toast.LENGTH_SHORT).show()
-                    }
-                } else {
-                    Toast.makeText(this, "Permission Denied", Toast.LENGTH_SHORT).show()
+        locationRequest = LocationRequest.create().apply {
+            interval = LOCATION_UPDATE_INTERVAL_MILLIS
+            fastestInterval = LOCATION_UPDATE_INTERVAL_MILLIS
+            priority = LocationRequest.PRIORITY_HIGH_ACCURACY
+        }
+
+        val builder = LocationSettingsRequest.Builder()
+            .addLocationRequest(locationRequest)
+
+        val client: SettingsClient = LocationServices.getSettingsClient(this)
+        val task: Task<LocationSettingsResponse> = client.checkLocationSettings(builder.build())
+
+        task.addOnSuccessListener { locationSettingsResponse ->
+            // All location settings are satisfied. The client can initialize
+            // location requests here.
+            // ...
+            requestingLocationUpdates = true
+            startLocationUpdates()
+        }
+
+        task.addOnFailureListener { exception ->
+            if (exception is ResolvableApiException) {
+                // Location settings are not satisfied, but this can be fixed
+                // by showing the user a dialog.
+                try {
+                    // Show the dialog by calling startResolutionForResult(),
+                    // and check the result in onActivityResult().
+                    exception.startResolutionForResult(this@MainActivity, REQUEST_CHECK_SETTINGS)
+                } catch (sendEx: IntentSender.SendIntentException) {
+                    // Ignore the error.
+                    finish()
                 }
-                return
+            }
+        }
+
+        locationCallback = object : LocationCallback() {
+            override fun onLocationResult(locationResult: LocationResult) {
+                val currentLocation = locationResult.lastLocation
+                var distance = 0.0F
+                previousLocation?.let { previousLocation ->
+                    currentLocation?.let { currentLocation ->
+                        distance = previousLocation.distanceTo(currentLocation)
+                    }
+                }
+                pastDistances.add(distance)
+                previousLocation = currentLocation
+                while (pastDistances.size > MAX_DISTANCE_COUNTS) {
+                    pastDistances.removeAt(0)
+                }
+                var totalDistance = pastDistances.reduce { acc, fl -> acc + fl }
+                if (totalDistance > HIDE_MAP_ON_MOVE_DISTANCE_THRESHOLD) {
+                    busMoving()
+                } else {
+                    busStopped()
+                }
             }
         }
     }
@@ -339,37 +444,65 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
     }
 
     private fun loadWebInterface() {
-        binding.webview.addJavascriptInterface(WebAppInterface(this, onGetStop = {
-            val type: Type = object : TypeToken<ArrayList<RouteResponseItem>>() {}.type
-            coordinate = Gson().fromJson(it, type)
+        binding.webview.addJavascriptInterface(
+            WebAppInterface(
+                mContext = this,
+                onGetStop = { loadStops(it) },
+                hideTomTom = { hideTomTom() },
+                showTomTom = { showTomTom() }), "Android"
+        )
+    }
 
-            runOnUiThread {
-                binding.clMap.visible()
-            }
+    private fun loadStops(it: String) {
+        val type: Type = object : TypeToken<ArrayList<RouteResponseItem>>() {}.type
+        coordinate = Gson().fromJson(it, type)
 
-            Handler(Looper.getMainLooper()).postDelayed({
-                val departureCoordinate = GeoCoordinate(
-                    coordinate[0].geometry?.coordinates?.get(1)?.toDouble()
-                        ?: 0.0, coordinate[0].geometry?.coordinates?.get(0)?.toDouble() ?: 0.0
-                )
+        //            Toast.makeText(this, coordinate.toString(), Toast.LENGTH_SHORT).show();
+        //            Log.e("", coordinate.toString() ,)
 
-                val destinationCoordinate = GeoCoordinate(
-                    coordinate[1].geometry?.coordinates?.get(1)?.toDouble()
-                        ?: 0.0, coordinate[1].geometry?.coordinates?.get(0)?.toDouble() ?: 0.0
-                )
+        //            println("this is from line 306" + coordinate.toString())
 
-                planRoute(departureCoordinate, destinationCoordinate)
 
-            }, 2000)
-
-        }, onHideTomTom = {
-            binding.clMap.gone()
-        }, onShowTomTom = {
-            println("we will be display the map now")
-            print("this is the map display code" + binding.clMap.visible())
+//        if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
+//            Toast.makeText(this, "landscape", Toast.LENGTH_SHORT).show();
+//        } else if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
+//            Toast.makeText(this, "portrait", Toast.LENGTH_SHORT).show();
+////            requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+//            binding.clMap.visible()
+//        }
+//        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+        //            Toast.makeText(this, requestedOrientation.toString(), Toast.LENGTH_SHORT).show()
+        //            Toast.makeText(
+        //                this, MainActivity.getResources().getConfiguration().orientation, Toast.LENGTH_SHORT).show()
+        runOnUiThread {
             binding.clMap.visible()
-        }), "Android")
-//        binding.webview.addJavascriptInterface(WebAppInterface(this), "Android")
+        }
+
+        Handler(Looper.getMainLooper()).postDelayed({
+            val departureCoordinate = GeoCoordinate(
+                coordinate[0].geometry?.coordinates?.get(1)?.toDouble()
+                    ?: 0.0, coordinate[0].geometry?.coordinates?.get(0)?.toDouble() ?: 0.0
+            )
+
+            val destinationCoordinate = GeoCoordinate(
+                coordinate[1].geometry?.coordinates?.get(1)?.toDouble()
+                    ?: 0.0, coordinate[1].geometry?.coordinates?.get(0)?.toDouble() ?: 0.0
+            )
+
+            planRoute(departureCoordinate, destinationCoordinate)
+        }, 2000)
+    }
+
+    private fun hideTomTom() {
+        runOnUiThread {
+            binding.clMap.gone()
+        }
+    }
+
+    private fun showTomTom() {
+        runOnUiThread {
+            binding.clMap.visible()
+        }
     }
 
 

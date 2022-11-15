@@ -6,8 +6,8 @@ import android.webkit.JavascriptInterface
 class WebAppInterface(
     private val mContext: Context,
     val onGetStop: ((String) -> Unit)? = null,
-    val onHideTomTom: ((String) -> Unit)? = null,
-    val onShowTomTom: ((String) -> Unit)? = null
+    val hideTomTom: (() -> Unit)? = null,
+    val showTomTom: (() -> Unit)? = null
 ) {
 //class WebAppInterface(private val mContext: Context, val onGetStop: ((String) -> Unit)? = null,val onShowTomTom:((String) -> Unit),val onHideTomTom:((String) -> Unit)){
 //    class WebAppInterface(private val mContext: Context) {
@@ -21,16 +21,16 @@ class WebAppInterface(
         println("owebappinterface 12" + _busStopGeoJson)
     }
 
-    @JavascriptInterface
-    fun showTomTom() {
-        println("map_container")
-        onShowTomTom?.invoke("temp")
-    }
-
+    /** Show a toast from the web page  */
     @JavascriptInterface
     fun hideTomTom() {
-        println("we need to hide tomtom now")
-        onHideTomTom?.invoke("temp")
+        hideTomTom?.invoke()
+    }
+
+    /** Show a toast from the web page  */
+    @JavascriptInterface
+    fun showTomTom() {
+        showTomTom?.invoke()
     }
 
 }
