@@ -99,7 +99,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
     private var requestingLocationUpdates = false
     var previousLocation: Location? = null
     var pastDistances = ArrayList<Float>()
-    val MAX_DISTANCE_COUNTS = 10
+    val MAX_DISTANCE_COUNTS = 5
     val HIDE_MAP_ON_MOVE_DISTANCE_THRESHOLD = 20
     val LOCATION_UPDATE_INTERVAL_MILLIS = 1000L
 
