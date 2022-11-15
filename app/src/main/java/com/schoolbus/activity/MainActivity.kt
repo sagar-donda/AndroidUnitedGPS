@@ -7,20 +7,17 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.location.LocationManager
-import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
-import android.webkit.JavascriptInterface
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -110,17 +107,17 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
         if (ContextCompat.checkSelfPermission(
                 this@MainActivity,
                 Manifest.permission.ACCESS_FINE_LOCATION
-            ) !==
-            PackageManager.PERMISSION_GRANTED
+            ) !== PackageManager.PERMISSION_GRANTED
         ) {
             if (ActivityCompat.shouldShowRequestPermissionRationale(
                     this@MainActivity,
-                    Manifest.permission.ACCESS_FINE_LOCATION
+                    Manifest.permission.ACCESS_COARSE_LOCATION
                 )
             ) {
                 ActivityCompat.requestPermissions(
                     this@MainActivity,
-                    arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 1
+                    arrayOf(Manifest.permission.CAMERA),
+                    1
                 )
             } else {
                 ActivityCompat.requestPermissions(
@@ -137,6 +134,15 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
             ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
                 this,
                 Manifest.permission.ACCESS_COARSE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.CAMERA
+            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.READ_EXTERNAL_STORAGE
+            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE
             ) != PackageManager.PERMISSION_GRANTED
         ) {
             return
@@ -193,8 +199,31 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
                     if ((ContextCompat.checkSelfPermission(
                             this@MainActivity,
                             Manifest.permission.ACCESS_FINE_LOCATION
-                        ) ===
-                                PackageManager.PERMISSION_GRANTED)
+                        ) === PackageManager.PERMISSION_GRANTED)
+                    ) {
+                        Toast.makeText(this, "Permission Granted", Toast.LENGTH_SHORT).show()
+                    } else if ((ContextCompat.checkSelfPermission(
+                            this@MainActivity,
+                            Manifest.permission.CAMERA
+                        ) === PackageManager.PERMISSION_GRANTED)
+                    ) {
+                        Toast.makeText(this, "Permission Granted", Toast.LENGTH_SHORT).show()
+                    } else if ((ContextCompat.checkSelfPermission(
+                            this@MainActivity,
+                            Manifest.permission.ACCESS_COARSE_LOCATION
+                        ) === PackageManager.PERMISSION_GRANTED)
+                    ) {
+                        Toast.makeText(this, "Permission Granted", Toast.LENGTH_SHORT).show()
+                    } else if ((ContextCompat.checkSelfPermission(
+                            this@MainActivity,
+                            Manifest.permission.READ_EXTERNAL_STORAGE
+                        ) === PackageManager.PERMISSION_GRANTED)
+                    ) {
+                        Toast.makeText(this, "Permission Granted", Toast.LENGTH_SHORT).show()
+                    } else if ((ContextCompat.checkSelfPermission(
+                            this@MainActivity,
+                            Manifest.permission.WRITE_EXTERNAL_STORAGE
+                        ) === PackageManager.PERMISSION_GRANTED)
                     ) {
                         Toast.makeText(this, "Permission Granted", Toast.LENGTH_SHORT).show()
                     }
@@ -235,7 +264,6 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
     }
 
     @SuppressLint("SetJavaScriptEnabled")
-    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     private fun requestWebView() {
         /**
          * Layout of WebView screen View
@@ -334,11 +362,11 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
 
             }, 2000)
 
-        },onHideTomTom = {
+        }, onHideTomTom = {
             binding.clMap.gone()
-        },onShowTomTom = {
+        }, onShowTomTom = {
             println("we will be display the map now")
-            print(binding.clMap.visible())
+            print("this is the map display code" + binding.clMap.visible())
             binding.clMap.visible()
         }), "Android")
 //        binding.webview.addJavascriptInterface(WebAppInterface(this), "Android")
@@ -558,4 +586,5 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
             }
             .show()
     }
+
 }

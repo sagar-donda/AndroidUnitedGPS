@@ -23,7 +23,7 @@ class WebAppInterface(
 
     @JavascriptInterface
     fun showTomTom() {
-        println("we need to display tomtom now")
+        println("map_container")
         onShowTomTom?.invoke("temp")
     }
 
