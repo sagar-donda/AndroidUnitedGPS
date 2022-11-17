@@ -2,25 +2,20 @@ package com.schoolbus.activity
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.content.Context
-import android.content.Intent
-import android.content.IntentSender
+import android.content.*
 import android.content.pm.PackageManager
-import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.location.Location
 import android.location.LocationManager
-import android.os.Handler
-import android.os.Looper
+import android.net.http.SslError
+import android.os.*
 import android.provider.Settings
 import android.util.Log
 import android.view.LayoutInflater
-import android.view.View
-import android.webkit.WebSettings
-import android.webkit.WebView
-import android.webkit.WebViewClient
+import android.webkit.*
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -70,7 +65,12 @@ import com.tomtom.sdk.routing.online.OnlineRoutingApi
 import java.lang.reflect.Type
 import java.util.*
 
+
 class MainActivity : BaseActivity<ActivityMainBinding>() {
+    var context: Context? = null
+
+    var mGeoLocationRequestOrigin: String? = null
+    var mGeoLocationCallback: GeolocationPermissions.Callback? = null
 
     private val REQUEST_CHECK_SETTINGS: Int = 101
     private var mLoaded = false
@@ -108,11 +108,13 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
     override fun setBinding(layoutInflater: LayoutInflater): ActivityMainBinding =
         ActivityMainBinding.inflate(layoutInflater)
 
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun InitView() {
         /**
          * request for show website
          */
         requestForWebView()
+        setWebClient()
         initClick()
 
         /**
@@ -159,11 +161,21 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
 
     override fun onResume() {
         super.onResume()
-        if (requestingLocationUpdates) startLocationUpdates()
+
+        Toast.makeText(this, "onresume called main", Toast.LENGTH_SHORT).show()
+
+//        if (requestingLocationUpdates) startLocationUpdates()
     }
 
     private fun startLocationUpdates() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
             // here to request the missing permissions, and then overriding
@@ -187,46 +199,6 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
 
     private fun stopLocationUpdates() {
         fusedLocationClient.removeLocationUpdates(locationCallback)
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == REQUEST_CHECK_SETTINGS) {
-            if (resultCode == RESULT_OK) {
-                startLocationUpdates()
-            } else {
-                finish()
-            }
-        }
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int, permissions: Array<String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        when (requestCode) {
-            1 -> {
-                if (grantResults.isNotEmpty() && grantResults[0] ==
-                    PackageManager.PERMISSION_GRANTED
-                ) {
-                    if ((ContextCompat.checkSelfPermission(
-                            this@MainActivity,
-                            Manifest.permission.ACCESS_FINE_LOCATION
-                        ) ===
-                                PackageManager.PERMISSION_GRANTED)
-                    ) {
-                        Toast.makeText(this, "Permission Granted", Toast.LENGTH_SHORT).show()
-                        // init permissions related features
-                        initLocationFeatures()
-                    }
-                } else {
-                    Toast.makeText(this, "Permission Denied", Toast.LENGTH_SHORT).show()
-                    finish()
-                }
-                return
-            }
-        }
     }
 
     private fun initLocationFeatures() {
@@ -316,8 +288,20 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
             }
         }
 
+        val lm: LocationManager
+        val location: Location?
+        lm = applicationContext.getSystemService(LOCATION_SERVICE) as LocationManager
+        location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+        location!!.bearing //speed
+        println("Show Speed - 293" + location)
+
+        val currentSpeed = location.speed * 3600 / 1000
+        println("Show currentSpeed - 296" + currentSpeed)
+
+
         locationCallback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
+
                 val currentLocation = locationResult.lastLocation
                 var distance = 0.0F
                 previousLocation?.let { previousLocation ->
@@ -325,12 +309,14 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
                         distance = previousLocation.distanceTo(currentLocation)
                     }
                 }
+
                 pastDistances.add(distance)
                 previousLocation = currentLocation
                 while (pastDistances.size > MAX_DISTANCE_COUNTS) {
                     pastDistances.removeAt(0)
                 }
                 var totalDistance = pastDistances.reduce { acc, fl -> acc + fl }
+
                 if (totalDistance > HIDE_MAP_ON_MOVE_DISTANCE_THRESHOLD) {
                     busMoving()
                 } else {
@@ -341,6 +327,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
     }
 
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun initClick() {
         binding.btnTryAgain.setOnClickListener {
             binding.webview.gone()
@@ -351,6 +338,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
         }
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun requestForWebView() {
         if (!mLoaded) {
             requestWebView()
@@ -368,6 +356,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
 
     }
 
+    @RequiresApi(Build.VERSION_CODES.O)
     @SuppressLint("SetJavaScriptEnabled")
     private fun requestWebView() {
         /**
@@ -388,15 +377,26 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
         binding.webview.isFocusable = true
         binding.webview.isFocusableInTouchMode = true
         binding.webview.settings.javaScriptEnabled = true
+        binding.webview.settings.setGeolocationEnabled(true)
+
+
+        binding.webview.settings.javaScriptCanOpenWindowsAutomatically = true
+        binding.webview.settings.domStorageEnabled = true
+        binding.webview.settings.allowContentAccess = true
+        binding.webview.settings.safeBrowsingEnabled = true
+        binding.webview.settings.mediaPlaybackRequiresUserGesture = false
+
+
+        binding.webview.webViewClient = object : WebViewClient() {
+            override
+            fun onReceivedSslError(view: WebView?, handler: SslErrorHandler?, error: SslError?) {
+                handler?.proceed()
+            }
+        }
+
         loadWebInterface()
 
-        binding.webview.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
-        binding.webview.settings.setRenderPriority(WebSettings.RenderPriority.HIGH)
-        binding.webview.settings.cacheMode = WebSettings.LOAD_DEFAULT
-        binding.webview.settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-        binding.webview.settings.domStorageEnabled = true
-        binding.webview.settings.setAppCacheEnabled(true)
-        binding.webview.settings.databaseEnabled = true
+
 
         /**
          * this force use ChromeWebClient
@@ -443,6 +443,109 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
         }
     }
 
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        when (requestCode) {
+            1 -> {
+                if (grantResults.isNotEmpty() && grantResults[0] ==
+                    PackageManager.PERMISSION_GRANTED
+                ) {
+                    if ((ContextCompat.checkSelfPermission(
+                            this@MainActivity,
+                            Manifest.permission.ACCESS_FINE_LOCATION
+                        ) ===
+                                PackageManager.PERMISSION_GRANTED)
+                    ) {
+                        Toast.makeText(this, "Permission Granted", Toast.LENGTH_SHORT).show()
+                        // init permissions related features
+                        initLocationFeatures()
+                    }
+                } else {
+                    Toast.makeText(this, "Permission Denied", Toast.LENGTH_SHORT).show()
+                    finish()
+                }
+                return
+            }
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+
+
+        if (requestCode == REQUEST_CHECK_SETTINGS) {
+            if (resultCode == RESULT_OK) {
+                startLocationUpdates()
+            } else {
+                finish()
+            }
+        }
+    }
+
+    private fun setWebClient() {
+
+        binding.webview.webChromeClient = object : WebChromeClient() {
+            override fun onGeolocationPermissionsShowPrompt(
+                origin: String?,
+                callback: GeolocationPermissions.Callback?
+            ) {
+
+                if (ContextCompat.checkSelfPermission(
+                        this@MainActivity,
+                        Manifest.permission.ACCESS_FINE_LOCATION
+                    )
+                    != PackageManager.PERMISSION_GRANTED
+                ) {
+
+                    if (ActivityCompat.shouldShowRequestPermissionRationale(
+                            this@MainActivity,
+                            Manifest.permission.ACCESS_FINE_LOCATION
+                        )
+                    ) {
+                        AlertDialog.Builder(this@MainActivity)
+                            .setMessage("Please turn ON the GPS to make app work smoothly")
+                            .setNeutralButton(
+                                android.R.string.ok,
+                                DialogInterface.OnClickListener { dialogInterface, i ->
+                                    mGeoLocationCallback = callback
+                                    mGeoLocationRequestOrigin = origin
+                                    ActivityCompat.requestPermissions(
+                                        this@MainActivity,
+                                        arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 1001
+                                    )
+
+                                })
+                            .show()
+
+                    } else {
+                        //no explanation need we can request the locatio
+                        mGeoLocationCallback = callback
+                        mGeoLocationRequestOrigin = origin
+                        ActivityCompat.requestPermissions(
+                            this@MainActivity,
+                            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 1001
+                        )
+                    }
+                } else {
+                    callback!!.invoke(origin, true, true)
+                }
+
+            }
+
+            override fun onProgressChanged(view: WebView?, newProgress: Int) {
+                super.onProgressChanged(view, newProgress)
+            }
+
+
+        }
+    }
+
     private fun loadWebInterface() {
         binding.webview.addJavascriptInterface(
             WebAppInterface(
@@ -457,23 +560,6 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
         val type: Type = object : TypeToken<ArrayList<RouteResponseItem>>() {}.type
         coordinate = Gson().fromJson(it, type)
 
-        //            Toast.makeText(this, coordinate.toString(), Toast.LENGTH_SHORT).show();
-        //            Log.e("", coordinate.toString() ,)
-
-        //            println("this is from line 306" + coordinate.toString())
-
-
-//        if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
-//            Toast.makeText(this, "landscape", Toast.LENGTH_SHORT).show();
-//        } else if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
-//            Toast.makeText(this, "portrait", Toast.LENGTH_SHORT).show();
-////            requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-//            binding.clMap.visible()
-//        }
-//        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-        //            Toast.makeText(this, requestedOrientation.toString(), Toast.LENGTH_SHORT).show()
-        //            Toast.makeText(
-        //                this, MainActivity.getResources().getConfiguration().orientation, Toast.LENGTH_SHORT).show()
         runOnUiThread {
             binding.clMap.visible()
         }
@@ -514,17 +600,21 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
 
     private fun enableUserLocation() {
         // Getting locations to the map
-
         tomTomMap.setLocationEngine(locationEngine)
         val locationMarker = LocationMarkerOptions(LocationMarkerOptions.Type.POINTER)
         tomTomMap.enableLocationMarker(locationMarker)
+    }
+
+    private fun navigate() {
+        val routePlan = RoutePlan(route, planRouteOptions)
+        navigationFragment.startNavigation(routePlan)
+        navigationFragment.addNavigationListener(navigationListener)
     }
 
     private fun initRouting() {
         routingApi = OnlineRoutingApi.create(this, BuildConfig.MAPS_API_KEY)
         dynamicRoutingApi = OnlineDynamicRoutingApi.create(routingApi)
     }
-
 
     private fun planRoute(
         departureCoordinate: GeoCoordinate,

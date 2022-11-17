@@ -157,12 +157,33 @@ class NavigationFragment : BaseFragment<FragmentNavigationBinding>(),OnMapReadyC
         }
     }
 
-    @SuppressLint("MissingPermission", "SetTextI18n")
+//    @SuppressLint("MissingPermission", "SetTextI18n")
     private fun getCurrentLocation(){
         /**
          * Get Current Location
          */
-        mFusedLocationClient.getCurrentLocation(100, CancellationTokenSource().token).addOnSuccessListener {
+    if (context?.let {
+            ActivityCompat.checkSelfPermission(
+                it,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            )
+        } != PackageManager.PERMISSION_GRANTED && context?.let {
+            ActivityCompat.checkSelfPermission(
+                it,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            )
+        } != PackageManager.PERMISSION_GRANTED
+    ) {
+        // TODO: Consider calling
+        //    ActivityCompat#requestPermissions
+        // here to request the missing permissions, and then overriding
+        //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+        //                                          int[] grantResults)
+        // to handle the case where the user grants the permission. See the documentation
+        // for ActivityCompat#requestPermissions for more details.
+        return
+    }
+    mFusedLocationClient.getCurrentLocation(100, CancellationTokenSource().token).addOnSuccessListener {
             currentLocation = GeoCoordinate(it.latitude, it.longitude)
             val newCameraOptions = CameraOptions(
                 position = currentLocation,

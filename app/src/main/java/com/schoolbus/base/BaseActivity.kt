@@ -3,6 +3,8 @@ package com.schoolbus.base
 import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.webkit.GeolocationPermissions
+import android.webkit.WebChromeClient
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.viewbinding.ViewBinding
@@ -23,6 +25,8 @@ abstract class BaseActivity<VB : ViewBinding> : AppCompatActivity() {
         binding = setBinding(layoutInflater)
         setContentView(binding.root)
         InitView()
+
+
     }
 
     protected abstract fun setBinding(layoutInflater: LayoutInflater): VB

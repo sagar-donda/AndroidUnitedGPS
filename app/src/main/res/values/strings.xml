@@ -2,4 +2,6 @@
     <string name="app_name">UniteGPS</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="cannot_open_file_chooser_txt">Can\'t Open Camera</string>
+    <string name="file_chooser_title">Choose File</string>
 </resources>
