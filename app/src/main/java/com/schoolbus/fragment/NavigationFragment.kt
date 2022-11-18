@@ -78,7 +78,7 @@ class NavigationFragment : BaseFragment<FragmentNavigationBinding>(),OnMapReadyC
 
     private val navigationUiOptions = NavigationUiOptions(
         voiceLanguage = Locale.getDefault(),
-        keepInBackground = true,
+//        keepInBackground = true,
         isSoundEnabled = true,
         units = UnitSystem.METRIC
     )
@@ -157,7 +157,7 @@ class NavigationFragment : BaseFragment<FragmentNavigationBinding>(),OnMapReadyC
         }
     }
 
-//    @SuppressLint("MissingPermission", "SetTextI18n")
+    @SuppressLint("MissingPermission", "SetTextI18n")
     private fun getCurrentLocation(){
         /**
          * Get Current Location

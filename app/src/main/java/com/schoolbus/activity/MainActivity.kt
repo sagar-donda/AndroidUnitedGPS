@@ -7,6 +7,7 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.location.Location
 import android.location.LocationManager
+import android.net.Uri
 import android.net.http.SslError
 import android.os.*
 import android.provider.Settings
@@ -67,6 +68,15 @@ import java.util.*
 
 
 class MainActivity : BaseActivity<ActivityMainBinding>() {
+    private val permission = arrayOf(
+        Manifest.permission.CAMERA,
+        Manifest.permission.RECORD_AUDIO,
+        Manifest.permission.MODIFY_AUDIO_SETTINGS,
+        Manifest.permission.ACCESS_COARSE_LOCATION,
+        Manifest.permission.ACCESS_FINE_LOCATION,
+    )
+    private val requestCode = 1
+
     var context: Context? = null
 
     var mGeoLocationRequestOrigin: String? = null
@@ -110,6 +120,9 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun InitView() {
+        val action: String? = intent?.action
+        val data: Uri? = intent?.data
+        startScan()
         /**
          * request for show website
          */
@@ -151,6 +164,19 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
 
     }
 
+    private fun isPermissionGranted(): Boolean {
+        permission.forEach {
+            if (ActivityCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED)
+                return false
+        }
+
+        return true
+    }
+
+    private fun askPermissions() {
+        ActivityCompat.requestPermissions(this, permission, requestCode)
+    }
+
     private fun busStopped() {
         binding.tvBusMovingOverlay.gone()
     }
@@ -162,7 +188,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
     override fun onResume() {
         super.onResume()
 
-        Toast.makeText(this, "onresume called main", Toast.LENGTH_SHORT).show()
+//        Toast.makeText(this, "onresume called main", Toast.LENGTH_SHORT).show()
 
 //        if (requestingLocationUpdates) startLocationUpdates()
     }
@@ -231,6 +257,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
             locationEngine = locationEngine,
             dynamicRoutingApi = dynamicRoutingApi,
             guidanceEngine = guidanceEngine
+
         )
         tomtomNavigation = TomTomNavigation.create(navigationConfiguration)
 
@@ -242,7 +269,10 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
         }
 
         val navigationUiOptions = NavigationUiOptions(
-            keepInBackground = true
+            voiceLanguage = Locale.getDefault(),
+//            keepInBackground = true,
+            isSoundEnabled = true,
+            units = UnitSystem.METRIC
         )
         navigationFragment = NavigationFragment.newInstance(navigationUiOptions)
         supportFragmentManager.beginTransaction()
@@ -288,15 +318,15 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
             }
         }
 
-        val lm: LocationManager
-        val location: Location?
-        lm = applicationContext.getSystemService(LOCATION_SERVICE) as LocationManager
-        location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER)
-        location!!.bearing //speed
-        println("Show Speed - 293" + location)
-
-        val currentSpeed = location.speed * 3600 / 1000
-        println("Show currentSpeed - 296" + currentSpeed)
+//        val lm: LocationManager
+//        val location: Location?
+//        lm = applicationContext.getSystemService(LOCATION_SERVICE) as LocationManager
+//        location = lm.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+//        location!!.bearing //speed
+//        println("Show Speed - 293" + location)
+//
+//        val currentSpeed = location.speed * 3600 / 1000
+//        println("Show currentSpeed - 296" + currentSpeed)
 
 
         locationCallback = object : LocationCallback() {
@@ -379,13 +409,26 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
         binding.webview.settings.javaScriptEnabled = true
         binding.webview.settings.setGeolocationEnabled(true)
 
+        binding.webview.settings.allowFileAccessFromFileURLs = true;
+        binding.webview.settings.allowUniversalAccessFromFileURLs = true;
 
         binding.webview.settings.javaScriptCanOpenWindowsAutomatically = true
         binding.webview.settings.domStorageEnabled = true
         binding.webview.settings.allowContentAccess = true
+        binding.webview.settings.setAllowFileAccessFromFileURLs(true)
+        binding.webview.settings.setAllowUniversalAccessFromFileURLs(true)
         binding.webview.settings.safeBrowsingEnabled = true
         binding.webview.settings.mediaPlaybackRequiresUserGesture = false
 
+        binding.webview.webViewClient = WebViewClient()
+        binding.webview.setWebChromeClient(object : WebChromeClient() {
+            // Grant permissions for cam
+            override fun onPermissionRequest(request: PermissionRequest) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    request.grant(request.resources);
+                }
+            }
+        })
 
         binding.webview.webViewClient = object : WebViewClient() {
             override
@@ -395,7 +438,6 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
         }
 
         loadWebInterface()
-
 
 
         /**
@@ -565,18 +607,88 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
         }
 
         Handler(Looper.getMainLooper()).postDelayed({
+
+            val srcAdd = GeoCoordinate(
+                coordinate[0].geometry?.coordinates?.get(1)?.toDouble() ?: 0.0,
+                coordinate[0].geometry?.coordinates?.get(0)?.toDouble() ?: 0.0
+            )
+
+            val desAdd = GeoCoordinate(
+                coordinate[0].geometry?.coordinates?.get(1)?.toDouble() ?: 0.0,
+                coordinate[1].geometry?.coordinates?.get(0)?.toDouble() ?: 0.0
+            )
+
+//            for (i in 0 until coordinate.size) {
+//                coords_markers.add(GeoCoordinate(
+//                    coordinate[i].geometry?.coordinates?.get(1)?.toDouble()
+//                        ?: 0.0, coordinate[i].geometry?.coordinates?.get(0)?.toDouble() ?: 0.0
+//                ))
+//            }
+
+//            val wayPoints = GeoCoordinate
+//
+//            for (j in 1 until coordinate.size - 1) {
+//                wayPoints = wayPoints + (if (wayPoints == "") "" else "%7C") + coordinate.get(j) + "," + coordinate.get(j)
+//            }
+//            wayPoints = "&waypoints=$wayPoints"
+//            println("wayPoints" + wayPoints)
+//            fun main(args: Array<String>) {
+//
+//            for (i in coordinate.indices) {
+//                println(coordinate[i])
+//            }
+//        }
+
             val departureCoordinate = GeoCoordinate(
                 coordinate[0].geometry?.coordinates?.get(1)?.toDouble()
                     ?: 0.0, coordinate[0].geometry?.coordinates?.get(0)?.toDouble() ?: 0.0
             )
 
-            val destinationCoordinate = GeoCoordinate(
+            val customCoordinate = GeoCoordinate(
                 coordinate[1].geometry?.coordinates?.get(1)?.toDouble()
                     ?: 0.0, coordinate[1].geometry?.coordinates?.get(0)?.toDouble() ?: 0.0
             )
+            val customCoordinate1 = GeoCoordinate(
+                coordinate[2].geometry?.coordinates?.get(1)?.toDouble()
+                    ?: 0.0, coordinate[2].geometry?.coordinates?.get(0)?.toDouble() ?: 0.0
+            )
 
-            planRoute(departureCoordinate, destinationCoordinate)
+            val customCoordinate2 = GeoCoordinate(
+                coordinate[3].geometry?.coordinates?.get(1)?.toDouble()
+                    ?: 0.0, coordinate[3].geometry?.coordinates?.get(0)?.toDouble() ?: 0.0
+            )
+
+            val customCoordinate3 = GeoCoordinate(
+                coordinate[4].geometry?.coordinates?.get(1)?.toDouble()
+                    ?: 0.0, coordinate[4].geometry?.coordinates?.get(0)?.toDouble() ?: 0.0
+            )
+
+            val destinationCoordinate = GeoCoordinate(
+                coordinate[6].geometry?.coordinates?.get(1)?.toDouble()
+                    ?: 0.0, coordinate[6].geometry?.coordinates?.get(0)?.toDouble() ?: 0.0
+            )
+
+            planRoute(
+                departureCoordinate,
+                destinationCoordinate,
+                customCoordinate,
+                customCoordinate1,
+                customCoordinate2,
+                customCoordinate3
+            )
         }, 2000)
+        println("Show co-ordinate 582" + coordinate)
+
+    }
+
+    fun startScan() {
+        Handler().postDelayed({
+            if (!isPermissionGranted()) {
+
+                askPermissions()
+
+            }
+        }, 5 * 1000)
     }
 
     private fun hideTomTom() {
@@ -618,13 +730,24 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
 
     private fun planRoute(
         departureCoordinate: GeoCoordinate,
-        destinationCoordinate: GeoCoordinate
+        destinationCoordinate: GeoCoordinate,
+        customCoordinate: GeoCoordinate,
+        customCoordinate1: GeoCoordinate,
+        customCoordinate2: GeoCoordinate,
+        customCoordinate3: GeoCoordinate,
     ) {
         planRouteOptions = RoutePlanningOptions(
 
+
             itinerary = Itinerary(
                 origin = departureCoordinate,
-                destination = destinationCoordinate
+                destination = destinationCoordinate,
+                waypoints = listOf(
+                    customCoordinate,
+                    customCoordinate1,
+                    customCoordinate2,
+                    customCoordinate3,
+                )
             ),
             guidanceOptions = GuidanceOptions(
                 instructionType = InstructionType.TEXT
@@ -632,27 +755,51 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
             vehicle = Vehicle.Car()
         )
 
-        routingApi.planRoute(
-            planRouteOptions,
-            object : RoutePlanningCallback {
-                override fun onError(error: RoutingError) {
-                    toast(error.message.toString())
-                    Log.e("TAG", "onError: ${error.printStackTrace()}")
-                }
+//        val locationMarker = LocationMarkerOptions(type = LocationMarkerOptions.Type.POINTER)
+//        tomTomMap.enableLocationMarker(locationMarker)
+//
+//        val markerBuilder: MarkerBuilder = MarkerBuilder(position)
+//            .markerBalloon(balloon)
+//
+//        tomTomMap.addMarker(options = MarkerOptions(customCoordinate, balloonText = "1"))
+//
+//        val balloon = SimpleMarkerBalloon("babylon")
+//        map.addMarker(MarkerBuilder(hague).markerBalloon(balloon))
+//
+//
+//        val markerBalloon = BaseMarkerBalloon()
+//        markerBalloon.addProperty("key", "value")
+//
+//        tomTomMap.markerSettings.setMarkersClustering(true)
 
-                override fun onSuccess(result: RoutePlanningResult) {
-                    route = result.routes.firstOrNull() ?: return
-                    drawRoute()
-                }
 
-                override fun onRoutePlanned(route: Route) = Unit
+        println("customCoordinate" + customCoordinate)
+        println("customCoordinate1" + customCoordinate1)
+        println("customCoordinate2" + customCoordinate2)
+        println("customCoordinate3" + customCoordinate3)
+        println("departureCoordinate" + departureCoordinate)
+        println("destinationCoordinate" + destinationCoordinate)
+
+
+        routingApi.planRoute(planRouteOptions, object : RoutePlanningCallback {
+            override fun onError(error: RoutingError) {
+                toast(error.message.toString())
+                Log.e("TAG", "onError: ${error.printStackTrace()}")
             }
+
+            override fun onSuccess(result: RoutePlanningResult) {
+                route = result.routes.firstOrNull() ?: return
+                drawRoute()
+            }
+
+            override fun onRoutePlanned(route: Route) = Unit
+        }
         )
     }
 
     private fun drawRoute() {
-        val instructions = route.mapInstructions()
-        val geometry = route.legs.flatMap { it.points }
+        val instructions = this.route.mapInstructions()
+        val geometry = this.route.legs.flatMap { it.points }
         val routeOptions = RouteOptions(
             geometry = geometry,
             destinationMarkerVisible = true,
@@ -660,10 +807,10 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
             instructions = instructions
         )
         tomTomMap.addRoute(routeOptions)
-        tomTomMap.zoomToRoutes(40)
+        tomTomMap.zoomToRoutes(100)
 
         Handler(Looper.getMainLooper()).postDelayed({
-            val routePlan = RoutePlan(route, planRouteOptions)
+            val routePlan = RoutePlan(this.route, planRouteOptions)
             navigationFragment.startNavigation(routePlan)
             navigationFragment.addNavigationListener(navigationListener)
             tomtomNavigation.addOnProgressUpdateListener(onProgressUpdateListener)
@@ -702,12 +849,15 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
     private val onProgressUpdateListener = OnProgressUpdateListener {
         tomTomMap.routes.first().progress = it.distanceAlongRoute
     }
-
     private val onCameraChangeListener by lazy {
         OnCameraChangeListener {
             val cameraTrackingMode = tomTomMap.cameraTrackingMode()
             if (cameraTrackingMode == CameraTrackingMode.FOLLOW_ROUTE) {
                 navigationFragment.navigationView?.showSpeedView()
+
+                println("speed" + navigationFragment.navigationView?.showSpeedView())
+//                navigationFragment.navigationView?.showSpeedView()
+
             } else {
                 navigationFragment.navigationView?.hideSpeedView()
             }
@@ -726,6 +876,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
         tomTomMap.changeCameraTrackingMode(CameraTrackingMode.NONE)
         tomTomMap.enableLocationMarker(LocationMarkerOptions(LocationMarkerOptions.Type.POINTER))
         tomtomNavigation.removeOnProgressUpdateListener(onProgressUpdateListener)
+        navigationFragment.removeNavigationListener(navigationListener)
         tomTomMap.clear()
     }
 

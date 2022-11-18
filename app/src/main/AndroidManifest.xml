@@ -32,7 +32,6 @@
         tools:ignore="DataExtractionRules"
         tools:targetApi="m">
 
-        <uses-library android:name="com.google.android.maps" />
 
         <activity
             android:name=".activity.SplashActivity"
