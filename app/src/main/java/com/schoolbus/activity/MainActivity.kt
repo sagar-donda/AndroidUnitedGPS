@@ -608,37 +608,6 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
 
         Handler(Looper.getMainLooper()).postDelayed({
 
-            val srcAdd = GeoCoordinate(
-                coordinate[0].geometry?.coordinates?.get(1)?.toDouble() ?: 0.0,
-                coordinate[0].geometry?.coordinates?.get(0)?.toDouble() ?: 0.0
-            )
-
-            val desAdd = GeoCoordinate(
-                coordinate[0].geometry?.coordinates?.get(1)?.toDouble() ?: 0.0,
-                coordinate[1].geometry?.coordinates?.get(0)?.toDouble() ?: 0.0
-            )
-
-//            for (i in 0 until coordinate.size) {
-//                coords_markers.add(GeoCoordinate(
-//                    coordinate[i].geometry?.coordinates?.get(1)?.toDouble()
-//                        ?: 0.0, coordinate[i].geometry?.coordinates?.get(0)?.toDouble() ?: 0.0
-//                ))
-//            }
-
-//            val wayPoints = GeoCoordinate
-//
-//            for (j in 1 until coordinate.size - 1) {
-//                wayPoints = wayPoints + (if (wayPoints == "") "" else "%7C") + coordinate.get(j) + "," + coordinate.get(j)
-//            }
-//            wayPoints = "&waypoints=$wayPoints"
-//            println("wayPoints" + wayPoints)
-//            fun main(args: Array<String>) {
-//
-//            for (i in coordinate.indices) {
-//                println(coordinate[i])
-//            }
-//        }
-
             val departureCoordinate = GeoCoordinate(
                 coordinate[0].geometry?.coordinates?.get(1)?.toDouble()
                     ?: 0.0, coordinate[0].geometry?.coordinates?.get(0)?.toDouble() ?: 0.0
@@ -664,8 +633,8 @@ class MainActivity : BaseActivity<ActivityMainBinding>() {
             )
 
             val destinationCoordinate = GeoCoordinate(
-                coordinate[6].geometry?.coordinates?.get(1)?.toDouble()
-                    ?: 0.0, coordinate[6].geometry?.coordinates?.get(0)?.toDouble() ?: 0.0
+                coordinate[5].geometry?.coordinates?.get(1)?.toDouble()
+                    ?: 0.0, coordinate[5].geometry?.coordinates?.get(0)?.toDouble() ?: 0.0
             )
 
             planRoute(

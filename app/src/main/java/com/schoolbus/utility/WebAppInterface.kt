@@ -25,6 +25,7 @@ class WebAppInterface(
     @JavascriptInterface
     fun hideTomTom() {
         hideTomTom?.invoke()
+        println("tomtom will be hide now")
     }
 
     /** Show a toast from the web page  */
